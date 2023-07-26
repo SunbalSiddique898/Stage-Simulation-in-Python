@@ -1,0 +1,6 @@
+0:lights_on
+2:smoke_on
+4:lights_off
+5:band_move
+7:smoke_off
+9:band_reset
