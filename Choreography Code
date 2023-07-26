@@ -1,0 +1,271 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.patches import Rectangle
+import random
+import time
+
+# Creating a "Light" class to represent a light source with its position, direction, intensity, and color.
+class Light:
+    def __init__(self, position, direction, intensity, color):
+        self.position = position
+        self.direction = direction
+        self.intensity = intensity
+        self.color = color
+
+# This function depicts light as a quiver plot. It also explains it with text.
+def draw_light(ax, light):
+    intensity = light.intensity / 11
+    ax.quiver(light.position[0], light.position[1], light.direction[0], light.direction[1],
+              angles='xy', scale_units='xy', scale=1, color=light.color, alpha=intensity)
+    text_position = [light.position[0] + light.direction[0], light.position[1] + light.direction[1]]
+    ax.text(light.position[0], light.position[1], f"Color: {light.color}\nIntensity: {light.intensity}",
+            horizontalalignment='center', verticalalignment='bottom', fontsize=8)
+
+# Creating a "SmokeMachine" class to represent a smoke machine with its position, direction, intensity, and diffusion type.
+class SmokeMachine:
+    def __init__(self, position, direction, intensity, diffusion_type):
+        self.position = position
+        self.direction = direction
+        self.intensity = intensity
+        self.diffusion_type = diffusion_type
+
+# This function depicts the smoke machine as a filled circle.
+def draw_smoke_machine(ax, smoke_machine, smoke_grid):
+    intensity = smoke_machine.intensity / 11
+    ax.add_artist(plt.Circle(smoke_machine.position, 20, color='crimson', alpha=intensity))
+    ax.imshow(smoke_grid, cmap='gray', alpha=intensity, extent=(0, 500, 0, 500))
+
+    # Update the position of the smoke machine circles
+    for artist in ax.artists:
+        if isinstance(artist, plt.Circle):
+            artist.center = (smoke_machine.position[0], smoke_machine.position[1])
+
+# Creating a "Band" class to represent the band with its position and shape.
+class Band:
+    def __init__(self, position, shape):
+        self.position = position
+        self.shape = shape
+
+# This function draws the band on stage.
+def draw_band(ax, band):
+    ax.fill(*band.shape, color='purple')
+
+# Function to parse the choreography file and return a list of actions
+def parse_choreography_file(file_path):
+    actions = []
+    with open(file_path, 'r') as file:
+        for line in file:
+            line = line.strip()
+            if line:
+                timestamp, action = line.split(':')
+                actions.append((float(timestamp), action))
+    return actions
+
+# Parse the choreography file and retrieve the list of actions
+choreography_file = "choreography.txt"
+actions = parse_choreography_file(choreography_file)
+
+# Creating five instances of the Light class with positions, directions, intensities, and colors.
+
+light1 = Light([230, 30], [0, -1], 8, 'red')
+light2 = Light([330, 30], [0, -1], 6, 'blue')
+light3 = Light([430, 30], [0, -1], 11, 'green')
+light4 = Light([40, 30], [-1, -1], 9, 'yellow')
+light5 = Light([130, 30], [0, -1], 7, 'orange')
+background = Light([500, 500], [0, -1], 7, 'black')
+
+lights = [light1, light2, light3, light4, light5, background]
+
+# Creating a band object with position and shape.
+
+band = Band([250, 200], [[200, 280, 280, 200], [40, 40, 80, 80]])
+
+# Create a new shape for the band representing a drum
+radius_outer = 60
+radius_inner = 40
+center_x, center_y = 240, 160
+theta = np.linspace(0, 2 * np.pi, 100)
+x_outer = center_x + radius_outer * np.cos(theta)
+y_outer = center_y + radius_outer * np.sin(theta)
+x_inner = center_x + radius_inner * np.cos(theta)
+y_inner = center_y + radius_inner * np.sin(theta)
+new_shape = [np.concatenate((x_outer, x_inner[::-1])).tolist(), np.concatenate((y_outer, y_inner[::-1])).tolist()]
+
+# Updating the band's shape
+band.shape = new_shape
+
+# Creating a smoke machine instance with position, direction, intensity, and diffusion type.
+smoke_machine = SmokeMachine([350, 80], [1, 0], 9, 'Moore')
+smoke_machine2 = SmokeMachine([130, 80], [1, 0], 9, 'Moore')
+
+# Initializing the smoke grid
+smoke_grid = np.zeros((500, 500), dtype=np.float64)
+
+# Creating a rectangle patch for the stage
+stage_rect = Rectangle((0, 0), 500, 100, color='gray')
+
+# Creating stage view with figure and subplots
+fig, (ax0, ax1) = plt.subplots(2, 1, gridspec_kw={'height_ratios': [1, 10]}, figsize=(10, 10))
+
+# Set aspect ratios. To ensure that x-axis and y-axis have the same scale.
+ax1.set_aspect("equal")
+ax0.set_aspect("equal")
+
+# Drawing the upper subplot with small circles
+ax0.fill([0, 500, 500, 0], [0, 0, 50, 50], color="black")
+circle1 = plt.Circle([30, 25], 20, color="yellow")
+ax0.add_patch(circle1)
+circle1 = plt.Circle([140, 25], 20, color="orange")
+ax0.add_patch(circle1)
+circle1 = plt.Circle([250, 25], 20, color="red")
+ax0.add_patch(circle1)
+circle1 = plt.Circle([360, 25], 20, color="blue")
+ax0.add_patch(circle1)
+circle1 = plt.Circle([470, 25], 20, color="green")
+ax0.add_patch(circle1)
+
+# Drawing stage elements, lights of different colors
+ax1.fill([0, 500, 500, 0], [0, 0, 500, 500], color="black")
+ax1.fill([30, 70, 70, 30], [500, 500, 500, 500], color="yellow")
+ax1.fill([30, 70, 130, 0], [500, 500, 0, 0], color="yellow")
+ax1.fill([130, 170, 170, 130], [500, 500, 500, 500], color="orange")
+ax1.fill([130, 170, 230, 70], [500, 500, 0, 0], color="orange")
+ax1.fill([230, 270, 270, 230], [500, 500, 500, 500], color="red")
+ax1.fill([230, 270, 330, 170], [500, 500, 0, 0], color="red")
+ax1.fill([330, 370, 370, 330], [500, 500, 500, 500], color="blue")
+ax1.fill([330, 370, 430, 270], [500, 500, 0, 0], color="blue")
+ax1.fill([430, 470, 470, 430], [500, 500, 500, 500], color="green")
+ax1.fill([430, 470, 500, 370], [500, 500, 0, 0], color="green")
+
+# Adding the illusion of a 3D stage
+stage_height = 100  # Height of the stage illusion
+stage_color = 'gray'  # Color of the stage illusion
+
+# Creating a gradient effect for the stage illusion
+gradient = np.linspace(0, 1, stage_height)
+for y in range(stage_height):
+    ax1.fill([0, 500, 500, 0], [y, y, y + 1, y + 1], color=(gradient[y], gradient[y], gradient[y]))
+
+# Drawing smoke machine by calling the "draw_smoke_machine" function defined above.
+draw_smoke_machine(ax1, smoke_machine, smoke_grid)
+draw_smoke_machine(ax1, smoke_machine2, smoke_grid)
+
+# Drawing band by calling the "draw_band" function defined above.
+draw_band(ax1, band)
+
+# Set titles and display the plot
+plt.suptitle("PERFORMANCE STAGE FOR \"SPINAL TAP\"", fontsize="18")
+# Creating smoke around the smoke machines
+circle_radius = 10
+# Iterate 10 times to change the colors of the lights
+plt.show()
+x = random.uniform(smoke_machine.position[0] - 30, smoke_machine.position[0] + 30)
+y = random.uniform(smoke_machine.position[1] - 30, smoke_machine.position[1] + 30)
+circle_color = random.choice(['gray', 'gray', 'gray', 'gray'])
+circle = plt.Circle((x, y), circle_radius, color=circle_color, alpha=0.5)
+ax1.add_artist(circle)
+
+x = random.uniform(smoke_machine2.position[0] - 30, smoke_machine.position[0] + 30)
+y = random.uniform(smoke_machine2.position[1] - 30, smoke_machine.position[1] + 30)
+circle_color = random.choice(['gray', 'gray', 'gray', 'gray'])
+circle = plt.Circle((x, y), circle_radius, color=circle_color, alpha=0.5)
+ax1.add_artist(circle)
+
+# Perform choreography actions
+for timestamp, action in actions:
+    time.sleep(timestamp)  # Wait for the specified timestamp
+
+    # Perform the corresponding action based on the choreography
+    if action == "lights_on":
+        # Turn on the lights
+        light1.intensity = 8
+        light2.intensity = 6
+        light3.intensity = 11
+        light4.intensity = 9
+        light5.intensity = 7
+        print("0: lights_on")
+
+    elif action == "lights_off":
+        # Turn off the lights
+        light1.intensity = 0
+        light2.intensity = 0
+        light3.intensity = 0
+        light4.intensity = 0
+        light5.intensity = 0
+        print("4: lights_off")
+
+    elif action == "smoke_on":
+        smoke_machine.intensity = 9
+        smoke_machine2.intensity = 9
+        print("2: smoke_on")
+
+    elif action == "smoke_off":
+        # Deactivate the smoke machine
+        smoke_machine.intensity = 0
+        smoke_machine2.intensity = 0
+        print("9: smoke_off")
+
+    elif action == "band_move":
+        # Move the band to a new position
+        band.position = [400, 400]
+        band.set_xy([400, 400])
+        print("6: band_move")
+
+    elif action == "band_reset":
+        # Reset the band position
+        band.position = [250, 200]
+        print("10: band_reset")
+
+    else:
+        # Invalid action
+        print(f"Invalid action: {action}")
+
+    # Clear the previous plot
+    ax1.clear()
+
+    # Redraw stage view with figure and subplots
+    fig, (ax0, ax1) = plt.subplots(2, 1, gridspec_kw={'height_ratios': [1, 10]}, figsize=(10, 10))
+
+    # Set aspect ratios. To ensure that x-axis and y-axis have the same scale.
+    ax1.set_aspect("equal")
+    ax0.set_aspect("equal")
+
+    # Drawing the upper subplot with small circles
+    ax0.fill([0, 500, 500, 0], [0, 0, 50, 50], color="black")
+    circle1 = plt.Circle([30, 25], 20, color="yellow")
+    ax0.add_patch(circle1)
+    circle1 = plt.Circle([140, 25], 20, color="orange")
+    ax0.add_patch(circle1)
+    circle1 = plt.Circle([250, 25], 20, color="red")
+    ax0.add_patch(circle1)
+    circle1 = plt.Circle([360, 25], 20, color="blue")
+    ax0.add_patch(circle1)
+    circle1 = plt.Circle([470, 25], 20, color="green")
+    ax0.add_patch(circle1)
+
+    # Drawing stage elements, lights of different colors
+    ax1.fill([0, 500, 500, 0], [0, 0, 500, 500], color="black")
+    ax1.fill([30, 70, 70, 30], [500, 500, 500, 500], color="yellow")
+    ax1.fill([30, 70, 130, 0], [500, 500, 0, 0], color="yellow")
+    ax1.fill([130, 170, 170, 130], [500, 500, 500, 500], color="orange")
+    ax1.fill([130, 170, 230, 70], [500, 500, 0, 0], color="orange")
+    ax1.fill([230, 270, 270, 230], [500, 500, 500, 500], color="red")
+    ax1.fill([230, 270, 330, 170], [500, 500, 0, 0], color="red")
+    ax1.fill([330, 370, 370, 330], [500, 500, 500, 500], color="blue")
+    ax1.fill([330, 370, 430, 270], [500, 500, 0, 0], color="blue")
+    ax1.fill([430, 470, 470, 430], [500, 500, 500, 500], color="green")
+    ax1.fill([430, 470, 500, 370], [500, 500, 0, 0], color="green")
+
+    # Redraw the smoke machines
+    draw_smoke_machine(ax1, smoke_machine, smoke_grid)
+    draw_smoke_machine(ax1, smoke_machine2, smoke_grid)
+
+    # Redraw the band
+    draw_band(ax1, band)
+
+    # Set titles and display the updated plot
+    plt.suptitle("CHOREOGRAPHY for \"SPINAL TAP\"", fontsize="18")
+    plt.show()
+
+
+plt.show()
